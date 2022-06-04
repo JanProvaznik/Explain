@@ -1,6 +1,10 @@
 # Explain (probably in a development dead end)
 Group creation automation for [Explaining concepts activity](https://forum.effectivealtruism.org/posts/r8Qv7QHjJyafmiLnp/#Explaining_Concepts__9_30_10_40_). Used as an icebreaker and helping to establish a shared context in a group that wants to have a deep discussion. Intended for creating groups with a ratio of 1 explainer : 2 students in three rounds for ~~15-50~~ 9 people and 8-15 concepts. 
 
+## Usage
+- full intended workflow bellow
+- basically in the directory of the project: `swipl explain.pl` -> `explain("example9.csv","output.csv",Rows).`
+
 ## Documentation
 
 The main predicate is `explain(+InPath,+OutPath,-OutputRows)` which loads csv from *InPath*, dynamically establishes relations based on its content, generates solutions using `rounds9`, and writes the current solution to *OutPath*.
@@ -19,14 +23,14 @@ Ambitious project proposal.
 - 2022-05-21
 Accompanying python script. For transforming form output to desired file. Discovered the `=..` operator for converting functors to lists. Basic input handling into lists of relations.
 
-- 2022-05-28
+- ~2022-05-28
 Generating groups and then selecting groups to form a solution is not viable.
 9 People ~1000 groups, 18 People ~20k groups, 36 People ~400k groups, 54 People ~2M groups
 I tried using a trick -> divide people into subgroups of 9 people and solve for them separately.
 If we generate the rounds naively from groups in the case of 9 people, it's still doing having 1000 choose 3 ~ 166 million options, that's too much. 
 
 - 2022-05-30
-`dynamic` predicate is what I needed from the beginning! Checking for membership in relationship list is strange and having relationships be predicates is significantly faster. Now I can use integer constraints with ease.
+`:-dynamic` meta-predicate is exaclty what I needed from the beginning! Checking for membership in relationship list is strange and having relationships represented as predicates is significantly faster. Now I can use integer constraints with ease.
 
 - 2022-06-03
 I tried reducing the search space by constraining in which order the students in one group, and teachers in one round can be. It helped, but still when a solution is impossible the program usually hangs instead of outputting `false`.
