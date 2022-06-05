@@ -90,7 +90,7 @@ filter_does_not_want(Relations,FilteredRelations):-
 combine(A,B,C):-
     C#=A*100+B.
 list_pair(A,B,[A,B]).
-rounds9(CanExplain,WantsExplain,ConceptCount,[Round1,Round2,Round3]):-
+rounds9(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     Round1 = [  group(T0,[S00,S01],C0),
                 group(T1,[S10,S11],C1),
                 group(T2,[S20,S21],C2)],
@@ -106,11 +106,10 @@ rounds9(CanExplain,WantsExplain,ConceptCount,[Round1,Round2,Round3]):-
     AllTeachers = [T0,T1,T2,T3,T4,T5,T6,T7,T8],
     AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80],
     AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81],
-    AllPeople = [T0,T1,T2,T3,T4,T5,T6,T7,T8,S00,S01,S10,S11,S20,S21,S30,S31,S40,S41,S50,S51,S60,S61,S70,S71,S80,S81],
     FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21],
     SecondRoundPeople = [T3,S30,S31,T4,S40,S41,T5,S50,S51],
     ThirdRoundPeople = [T6,S60,S61,T7,S70,S71,T8,S80,S81],
-    append(AllConcepts,AllPeople,Everything),
+    append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
 
     maplist(list_pair,AllConcepts,AllTeachers,CETuples),
     maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
@@ -152,7 +151,69 @@ rounds9(CanExplain,WantsExplain,ConceptCount,[Round1,Round2,Round3]):-
 
 
 
-rounds18(CanExplain,WantsExplain,ConceptCount,[Round1,Round2,Round3]). 
+rounds15(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
+    Round1 = [  group(T0,[S00,S01],C0),
+                group(T1,[S10,S11],C1),
+                group(T2,[S20,S21],C2),
+                group(T3,[S30,S31],C3),
+                group(T4,[S40,S41],C4)
+                ],
+    Round2 = [  group(T5,[S50,S51],C5),
+                group(T6,[S60,S61],C6),
+                group(T7,[S70,S71],C7),
+                group(T8,[S80,S81],C8),
+                group(T9,[S90,S91],C9)
+                ],
+    Round3 = [  group(T10,[S100,S101],C10),
+                group(T11,[S110,S111],C11),
+                group(T12,[S120,S121],C12),
+                group(T13,[S130,S131],C13),
+                group(T14,[S140,S141],C14)
+                ],
+    AllConcepts = [C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14],
+    AllTeachers = [T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14],
+    AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80,S90,S100,S110,S120,S130,S140],
+    AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81,S91,S101,S111,S121,S131,S141],
+    FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21,T3,S30,S31,T4,S40,S41],
+    SecondRoundPeople = [T5,S50,S51,T6,S60,S61,T7,S70,S71,T8,S80,S81,T9,S90,S91],   
+    ThirdRoundPeople = [T10,S100,S101,T11,S110,S111,T12,S120,S121,T13,S130,S131,T14,S140,S141],
+
+    append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
+
+    maplist(list_pair,AllConcepts,AllTeachers,CETuples),
+    maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
+    maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
+    append(WETuples1,WETuples2,WETuples),
+    tuples_in(CETuples, CanExplain),
+    tuples_in(WETuples, WantsExplain),
+
+    all_distinct(FristRoundPeople),
+    all_distinct(SecondRoundPeople),
+    all_distinct(ThirdRoundPeople),
+
+    maplist(#<,[T0,T1,T2,T3],[T1,T2,T3,T4]),
+    maplist(#<,[T5,T6,T7,T8],[T6,T7,T8,T9]),
+    maplist(#<,[T10,T11,T12,T13],[T11,T12,T13,T14]),
+
+    maplist(#<,AllFirstStudents,AllSecondStudents),
+
+    maplist(combine,AllConcepts,AllFirstStudents,Ls1),
+    maplist(combine,AllConcepts,AllSecondStudents,Ls2),
+    append(Ls1,Ls2,Ls),
+    all_distinct(Ls),
+
+    maplist(combine,AllConcepts,AllTeachers,Ks),
+    all_distinct(Ks),
+
+    (all_distinct(AllTeachers);
+    % all_distinct([T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]);
+    all_distinct([T0,T1,T2,T3,T4,T5,T6,T7,T8,T9]);
+    true
+    ),
+
+    labeling([ff],Everything).
+
+
 
 
 getCE(CanExplain):-
@@ -174,16 +235,91 @@ explain(InPath,OutPath,Out) :-
     csv_read_file(InPath,[Header|InRows]),
     header_to_conceptdict(Header,ConceptDict),
     rows_to_peopledict(InRows,PeopleDict),
-    % length(PeopleDict,PeopleCount), % this might be used for more people than 9
-    length(ConceptDict,ConceptCount),
-    rows_to_rels(PeopleDict,ConceptDict,Header,InRows,RelationsUnfiltered),
+    print(PeopleDict),
+    rows_to_rels(PeopleDict,ConceptDict,Header,InRows,RelationsUnfiltered), 
     filter_does_not_want(RelationsUnfiltered,Relations),
     maplist(assertz,Relations),
     getCE(CanExplain),
     getWE(WantsExplain),
-    rounds9(CanExplain,WantsExplain,ConceptCount,Rounds),
+
+    rounds27(CanExplain,WantsExplain,Rounds),
     Out=Rounds,
     % generated solution -> output csv
     rounds_to_rows(PeopleDict,ConceptDict,Rounds,OutputRows),
     outheader(OutHeader),
     csv_write_file(OutPath, [OutHeader|OutputRows],[]).
+
+
+
+%%% rounds27 works *sometimes*
+
+rounds27(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
+    Round1 = [  group(T0,[S00,S01],C0),
+                group(T1,[S10,S11],C1),
+                group(T2,[S20,S21],C2),
+                group(T3,[S30,S31],C3),
+                group(T4,[S40,S41],C4),
+                group(T5,[S50,S51],C5),
+                group(T6,[S60,S61],C6),
+                group(T7,[S70,S71],C7),
+                group(T8,[S80,S81],C8)
+                ],
+    Round2 = [  group(T9,[S90,S91],C9),
+                group(T10,[S100,S101],C10),
+                group(T11,[S110,S111],C11),
+                group(T12,[S120,S121],C12),
+                group(T13,[S130,S131],C13),
+                group(T14,[S140,S141],C14),
+                group(T15,[S150,S151],C15),
+                group(T16,[S160,S161],C16),
+                group(T17,[S170,S171],C17)
+                ],
+    Round3 = [  group(T18,[S180,S181],C18),
+                group(T19,[S190,S191],C19),
+                group(T20,[S200,S201],C20),
+                group(T21,[S210,S211],C21),
+                group(T22,[S220,S221],C22),
+                group(T23,[S230,S231],C23),
+                group(T24,[S240,S241],C24),
+                group(T25,[S250,S251],C25),
+                group(T26,[S260,S261],C26)
+                ],
+    
+    AllConcepts = [C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19,C20,C21,C22,C23,C24,C25,C26],
+    AllTeachers = [T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22,T23,T24,T25,T26],
+    AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80,S90,S100,S110,S120,S130,S140,S150,S160,S170,S180,S190,S200,S210,S220,S230,S240,S250,S260],
+    AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81,S91,S101,S111,S121,S131,S141,S151,S161,S171,S181,S191,S201,S211,S221,S231,S241,S251,S261],
+    FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21,T3,S30,S31,T4,S40,S41,T5,S50,S51,T6,S60,S61,T7,S70,S71,T8,S80,S81],
+    SecondRoundPeople = [T9,S90,S91,T10,S100,S101,T11,S110,S111,T12,S120,S121,T13,S130,S131,T14,S140,S141,T15,S150,S151,T16,S160,S161,T17,S170,S171],
+    ThirdRoundPeople = [T18,S180,S181,T19,S190,S191,T20,S200,S201,T21,S210,S211,T22,S220,S221,T23,S230,S231,T24,S240,S241,T25,S250,S251,T26,S260,S261],
+
+
+    maplist(list_pair,AllConcepts,AllTeachers,CETuples),
+    maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
+    maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
+    append(WETuples1,WETuples2,WETuples),
+    tuples_in(CETuples, CanExplain),
+    tuples_in(WETuples, WantsExplain),
+
+    all_distinct(FristRoundPeople),
+    all_distinct(SecondRoundPeople),
+    all_distinct(ThirdRoundPeople),
+
+    maplist(#<,[T0,T1,T2,T3,T4,T5,T6,T7],[T1,T2,T3,T4,T5,T6,T7,T8]),
+    maplist(#<,[T9,T10,T11,T12,T13,T14,T15,T16],[T10,T11,T12,T13,T14,T15,T16,T17]),
+    maplist(#<,[T18,T19,T20,T21,T22,T23,T24,T25],[T19,T20,T21,T22,T23,T24,T25,T26]),
+
+    maplist(#<,AllFirstStudents,AllSecondStudents),
+
+    maplist(combine,AllConcepts,AllFirstStudents,Ls1),
+    maplist(combine,AllConcepts,AllSecondStudents,Ls2),
+    append(Ls1,Ls2,Ls),
+    all_distinct(Ls),
+
+    maplist(combine,AllConcepts,AllTeachers,Ks),
+    all_distinct(Ks),
+
+    % performance is bad if I assert that teachers have to be distinct
+
+    append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
+    labeling([ffc],Everything).
