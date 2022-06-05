@@ -40,6 +40,11 @@ The original plan was to have a variable number of students in each group, but t
 
 On artificial data (such as running `explain("example9.csv","output.csv",Output).`) it performs barely OK, but for the intended use with many edge cases (like a person that can only explain or only wants to have explained) it's far too slow. I expected that with all the global constraints and first-fail heuristic it would be usable, but now I'm not sure how to save this. In retrospect, I was way too optimistic and should have done more calculations, whether the project is feasible.
 
+- 2022-06-05 AM
+My professor recreated the main functionality in a small fraction of time that I've spent on this and it worked better, now I'll replicate what he'd done and try to squeeze more out of this. `tuples_in` is what is important.
+
+- 2022-06-05 PM
+It's actually quite impressive, and I was able to make it general enough that it's not that painful making a 18 person version of the `rounds` predicate.
 
 
 ## ~~Workflow~~ (does not work):

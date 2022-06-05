@@ -87,20 +87,10 @@ filter_does_not_want(Relations,FilteredRelations):-
     exclude(not_interested,Relations,FilteredRelations).
 % endregion: IO
 
-% one student in two rounds has to have a different concept
-pair_compatible((S1,C1),(S2,C2)):-
-    (S1 #= S2) #==> (C1 #\= C2).
-    
-compatible_with(Exs,X):-
-    select(X, Exs, Rest),% don't compare with the same variable
-    maplist(pair_compatible(X),Rest).
-
-no_one_twice(Exs):-
-    maplist(compatible_with(Exs),Exs).
-
-pair3(X,X-3).
-% the simple case
-rounds9(ConceptCount,[Round1,Round2,Round3]):-
+combine(A,B,C):-
+    C#=A*100+B.
+list_pair(A,B,[A,B]).
+rounds9(CanExplain,WantsExplain,ConceptCount,[Round1,Round2,Round3]):-
     Round1 = [  group(T0,[S00,S01],C0),
                 group(T1,[S10,S11],C1),
                 group(T2,[S20,S21],C2)],
@@ -117,58 +107,58 @@ rounds9(ConceptCount,[Round1,Round2,Round3]):-
     AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80],
     AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81],
     AllPeople = [T0,T1,T2,T3,T4,T5,T6,T7,T8,S00,S01,S10,S11,S20,S21,S30,S31,S40,S41,S50,S51,S60,S61,S70,S71,S80,S81],
+    FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21],
+    SecondRoundPeople = [T3,S30,S31,T4,S40,S41,T5,S50,S51],
+    ThirdRoundPeople = [T6,S60,S61,T7,S70,S71,T8,S80,S81],
     append(AllConcepts,AllPeople,Everything),
-    % restricts the domain as well as enforcing each person is assigned thrice
-    range(1,9,Range),
-    maplist(pair3,Range,Cardinalities),
-    global_cardinality(AllPeople,Cardinalities),
-    % concepts are in the domain of 1..ConceptCount
-    AllConcepts ins 1..ConceptCount,
-    % teachers in a round are differnt and ordered to reduce search space
-    T0#<T1,T1#<T2,
-    T3#<T4,T4#<T5,
-    T6#<T7,T7#<T8,
 
+    maplist(list_pair,AllConcepts,AllTeachers,CETuples),
+    maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
+    maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
+    append(WETuples1,WETuples2,WETuples),
+    tuples_in(CETuples, CanExplain),
+    tuples_in(WETuples, WantsExplain),
+    all_distinct(FristRoundPeople),
+    all_distinct(SecondRoundPeople),
+    all_distinct(ThirdRoundPeople),
+
+    % teachers in a round are differnt and ordered to reduce search space
+    maplist(#<,[T0,T1],[T1,T2]),
+    maplist(#<,[T3,T4],[T4,T5]),
+    maplist(#<,[T6,T7],[T7,T8]),
     % ordering of students reduces search space
     maplist(#<,AllFirstStudents,AllSecondStudents),
 
-    % students in rounds are different
-    all_distinct([S00,S01,S10,S11,S20,S21]),
-    all_distinct([S30,S31,S40,S41,S50,S51]),
-    all_distinct([S60,S61,S70,S71,S80,S81]),
-
-    % teacher in one group can't be a student in the same round
-    all_distinct([T0,S10,S11,S20,S21]),
-    all_distinct([T1,S00,S01,S20,S21]),
-    all_distinct([T2,S00,S01,S10,S11]),
-
-    all_distinct([T3,S40,S41,S50,S51]),
-    all_distinct([T4,S30,S31,S50,S51]),
-    all_distinct([T5,S30,S31,S40,S41]),
-
-    all_distinct([T6,S70,S71,S80,S81]),
-    all_distinct([T7,S60,S61,S80,S81]),
-    all_distinct([T8,S60,S61,S70,S71]),
-
     % if a person is explained a concept C, then they should not be explained the same concept C again
-    Explanations = [(S00,C0),(S01,C0),(S10,C1),(S11,C1),(S20,C2),(S21,C2),(S30,C3),(S31,C3),(S40,C4),(S41,C4),(S50,C5),(S51,C5),(S60,C6),(S61,C6),(S70,C7),(S71,C7),(S80,C8),(S81,C8)],
-    no_one_twice(Explanations),
+    maplist(combine,AllConcepts,AllFirstStudents,Ls1),
+    maplist(combine,AllConcepts,AllSecondStudents,Ls2),
+    append(Ls1,Ls2,Ls),
+    all_distinct(Ls),
+
+    % if a person explains concept C, then they should not explain the same concept C again
+    maplist(combine,AllConcepts,AllTeachers,Ks),
+    all_distinct(Ks),
+    
 
     % ideally no one should explain twice, but there is 'or' if it's inevitable
-    (all_distinct(AllTeachers); 
+    (all_distinct(AllTeachers);
     all_distinct([T0,T1,T2,T3,T4,T5,T6,T7]);
     all_distinct([T0,T1,T2,T3,T4,T5,T6]);
     all_distinct([T0,T1,T2,T3,T4,T5]);
-    all_distinct([T0,T1,T2,T3,T4]);
-    all_distinct([T0,T1,T2,T3])
+    true
     ),
-
-    maplist(can_explain,AllTeachers,AllConcepts),
-    maplist(wants_have_explained,AllFirstStudents,AllConcepts),
-    maplist(wants_have_explained,AllSecondStudents,AllConcepts),
 
     labeling([ff],Everything).
 
+
+
+rounds18(CanExplain,WantsExplain,ConceptCount,[Round1,Round2,Round3]). 
+
+
+getCE(CanExplain):-
+    findall([C,T],(can_explain(T,C)),CanExplain).
+getWE(WantsExplain):-
+    findall([C,S],(wants_have_explained(S,C)),WantsExplain).
 % converting rows to dicts where keys are integers and values concepts/people    
 header_to_conceptdict(Header,ConceptDict):- 
     row_to_list(Header,[_|ConceptsList]),
@@ -179,7 +169,7 @@ rows_to_peopledict(Rows,PeopleDict):-
     transpose(RowsLL,[FR|_]),
     list_to_dict(FR,PeopleDict).
 
-explain(InPath,OutPath,OutputRows) :-
+explain(InPath,OutPath,Out) :-
     % input -> internal representation 
     csv_read_file(InPath,[Header|InRows]),
     header_to_conceptdict(Header,ConceptDict),
@@ -189,7 +179,10 @@ explain(InPath,OutPath,OutputRows) :-
     rows_to_rels(PeopleDict,ConceptDict,Header,InRows,RelationsUnfiltered),
     filter_does_not_want(RelationsUnfiltered,Relations),
     maplist(assertz,Relations),
-    rounds9(ConceptCount,Rounds),
+    getCE(CanExplain),
+    getWE(WantsExplain),
+    rounds9(CanExplain,WantsExplain,ConceptCount,Rounds),
+    Out=Rounds,
     % generated solution -> output csv
     rounds_to_rows(PeopleDict,ConceptDict,Rounds,OutputRows),
     outheader(OutHeader),
