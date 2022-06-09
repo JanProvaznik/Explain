@@ -86,6 +86,10 @@ list_to_row(List,Row):-row_to_list(Row,List).
 filter_does_not_want(Relations,FilteredRelations):-
     exclude(not_interested,Relations,FilteredRelations).
 % endregion: IO
+unique_teachers([],0).
+unique_teachers([X|Rest],Unique):-
+    member(X,Rest) -> unique_teachers(Rest,Unique); unique_teachers(Rest,Unique1),Unique #= Unique1+1.
+ 
 
 combine(A,B,C):-
     C#=A*100+B.
@@ -146,8 +150,13 @@ rounds9(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     all_distinct([T0,T1,T2,T3,T4,T5]);
     true
     ),
+    labeling([ff],Everything)
 
-    labeling([ff],Everything).
+    % unique_teachers(AllTeachers,Unique),
+    % print('Unique teachers: '),print(Unique)
+
+.
+
 
 
 
@@ -205,21 +214,36 @@ rounds15(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     maplist(combine,AllConcepts,AllTeachers,Ks),
     all_distinct(Ks),
 
-    (all_distinct(AllTeachers);
+    % (all_distinct(AllTeachers);
     % all_distinct([T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]);
-    all_distinct([T0,T1,T2,T3,T4,T5,T6,T7,T8,T9]);
-    true
-    ),
+    % all_distinct([T0,T1,T2,T3,T4,T5,T6,T7,T8,T9]);
+    % true
+    % ),
 
     labeling([ff],Everything).
 
+group_to_SCPairs(group(_,[S1,S2],C),[[C,S1],[C,S2]]).
+member_of(X,Y):-member(Y,X).
+addIf(Predicate,X,Acc0,Acc1):-
+    call(Predicate,X) -> Acc1 #= Acc0 + 1; Acc1#=Acc0.
+% the score is how many explanations are to people who only maybe wanted the concept explained
+score(HaveExplain,[Round1,Round2,Round3],Score):-
+    maplist(group_to_SCPairs,Round1,Round1Pairs),
+    maplist(group_to_SCPairs,Round2,Round2Pairs),
+    maplist(group_to_SCPairs,Round3,Round3Pairs),
+    append([Round1Pairs,Round2Pairs,Round3Pairs],AllPairs),
+    append(AllPairs,AllPairsFlat),
+    foldl(addIf(member_of(HaveExplain)),AllPairsFlat,0,Score).
 
-
+    
 
 getCE(CanExplain):-
     findall([C,T],(can_explain(T,C)),CanExplain).
 getWE(WantsExplain):-
     findall([C,S],(wants_have_explained(S,C)),WantsExplain).
+getHE(HaveExplain):-
+    findall([C,S],(really_wants_have_explained(S,C)),HaveExplain).
+
 % converting rows to dicts where keys are integers and values concepts/people    
 header_to_conceptdict(Header,ConceptDict):- 
     row_to_list(Header,[_|ConceptsList]),
@@ -235,17 +259,19 @@ explain(InPath,OutPath,Out) :-
     csv_read_file(InPath,[Header|InRows]),
     header_to_conceptdict(Header,ConceptDict),
     rows_to_peopledict(InRows,PeopleDict),
-    print(PeopleDict),
     rows_to_rels(PeopleDict,ConceptDict,Header,InRows,RelationsUnfiltered), 
     filter_does_not_want(RelationsUnfiltered,Relations),
     maplist(assertz,Relations),
     getCE(CanExplain),
     getWE(WantsExplain),
 
-    rounds27(CanExplain,WantsExplain,Rounds),
-    Out=Rounds,
+    rounds9(CanExplain,WantsExplain,Rounds),
+    % measuring how good is the solution in terms of how many people who really wanted something explained actually have it explained  
+    getHE(HaveExplain),
+    score(HaveExplain,Rounds,Score),
     % generated solution -> output csv
     rounds_to_rows(PeopleDict,ConceptDict,Rounds,OutputRows),
+    Out="ReallyWantedExplainedScore (higher is better)"-Score-OutputRows,
     outheader(OutHeader),
     csv_write_file(OutPath, [OutHeader|OutputRows],[]).
 
@@ -318,8 +344,7 @@ rounds27(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
 
     maplist(combine,AllConcepts,AllTeachers,Ks),
     all_distinct(Ks),
-
-    % performance is bad if I assert that teachers have to be distinct
+    % performance is bad if I assert that teachers have to be distinct (and in real data that is almost never satisfiable)
 
     append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
-    labeling([ffc],Everything).
+    labeling([ff],Everything).
