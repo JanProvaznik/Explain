@@ -1,5 +1,5 @@
 # Explain
-Group creation automation for [Explaining concepts activity](https://forum.effectivealtruism.org/posts/r8Qv7QHjJyafmiLnp/#Explaining_Concepts__9_30_10_40_). Used as an icebreaker and helping to establish a shared context in a group that wants to have a deep discussion. Intended for creating groups with a ratio of 1 explainer : 2 students in three rounds for 9/15/21/27 people and 8-15 concepts. 
+Group creation automation for [Explaining concepts activity](https://forum.effectivealtruism.org/posts/r8Qv7QHjJyafmiLnp/#Explaining_Concepts__9_30_10_40_). Used as an icebreaker and helping to establish a shared context in a group that wants to have a deep discussion. Intended for creating groups with a ratio of 1 explainer : 2 students in N rounds (tested for 2-5) for K (multiple of 3, best between 9-27) people and 8-15 concepts. 
 
 ## Workflow:
 1. Create a google form in this template: https://docs.google.com/forms/d/e/1FAIpQLSft_PXbcs4GAv8Hp12ibl69OBMkb2hgdeBdxDKwaEFncDUdyw/viewform?usp=sf_link
@@ -7,19 +7,19 @@ Group creation automation for [Explaining concepts activity](https://forum.effec
 3. link it to google sheets
 4. download the Gsheet as csv
 5. use the `sanitize.py` script to sanitize the input `python3 sanitize.py translate.json /path/to/exported.csv /path/to/sanitized.csv`
-6. partition to subgroups of 9/15/21/27 people and put them into their own .csv files, you can add fake people who want to have explained everything if the subgroups don't add up.
-7. run `swipl explain.pl` and then inside `swipl` run `explain("input.csv","output.csv",Rows).`
+6. partition to subgroups whose counts of people are divisible by three and put them into their own .csv files, you can add fake people who want to have explained everything if the subgroups don't add up.
+7. run `swipl explain.pl` and then inside `swipl` run `explain("input.csv","output.csv",NumberOfRounds,Rows).`
 8. Rounds are outputted to the output.csv file! If you don't like the current output, you can explore more options with `;`.
 
 ## Documentation
 
-The main predicates are `explain(+InPath,+OutPath,-Output)`  which loads csv from *InPath*, dynamically establishes relations based on its content, generates solutions using `roundsN`,where *N* is 9\/15\/21\/27, and writes the current solution to *OutPath*.
+The main predicates are `explain(+InPath,+OutPath,+NumberOfRounds,-Output)`  which loads csv from *InPath*, dynamically establishes relations based on its contents, generates solutions using `roundsN`, and writes the current solution to *OutPath*.
 
-The `rounds9(+CE,+WE,?Rounds)` predicate generates a list of 3 rounds for 9 people using the *clpfd* library integer constraints. It uses first-fail heuristic in the `labeling([ff],Vs]` predicate and global constraints: `all_distinct(Vs)` and `tuples_in`. The other roundsN work analogically.
+The `roundsN(+N,+K,+CE,+WE,?Rounds)` predicate generates a list of *N* rounds for *K* people using the *clpfd* library integer constraints. It uses first-fail heuristic in the `labeling([ff],Vs]` predicate and global constraints: `all_distinct(Vs)` and `tuples_in`. The other roundsN work analogically.
 
 Other code is mainly used for converting input into integers and then back to strings for the output.
 
-If there the number of people is unsupported the program halts with a message.
+The program supports all numbers of people, that are divisible by 3, but works best between 9-27.
 
 ## Development journal
 - March
@@ -58,5 +58,7 @@ Now it works even for 15 people, this is cool! 27 seems like too much, it someti
 - 2022-06-09
 Added scoring how many people had explained the thing they really wanted to have explained.
 
-- 2022-06-10
+- 2022-06-10 AM
 Generalized roundsN so that we don't have to select which one to use.
+- 2022-06-10 PM
+Refactor to be more DRY, now the program can generate any number of rounds (tested betwen 2-5).
