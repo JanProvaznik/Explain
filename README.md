@@ -15,7 +15,7 @@ Group creation automation for [Explaining concepts activity](https://forum.effec
 
 The main predicates are `explain(+InPath,+OutPath,+NumberOfRounds,-Output)`  which loads csv from *InPath*, dynamically establishes relations based on its contents, generates solutions using `roundsN`, and writes the current solution to *OutPath*.
 
-The `roundsN(+N,+K,+CE,+WE,?Rounds)` predicate generates a list of *N* rounds for *K* people using the *clpfd* library integer constraints. It uses first-fail heuristic in the `labeling([ff],Vs]` predicate and global constraints: `all_distinct(Vs)` and `tuples_in`. The other roundsN work analogically.
+The `roundsN(+N,+K,+CE,+WE,?Rounds)` predicate generates a list of *N* rounds for *K* groups of three using the *clpfd* library integer constraints. It uses first-fail heuristic in the `labeling([ff],Vs]` predicate and global constraints: `all_distinct(Vs)` and `tuples_in`. The other roundsN work analogically.
 
 Other code is mainly used for converting input into integers and then back to strings for the output.
 
