@@ -1,17 +1,25 @@
 # Explain
-Group creation automation for [Explaining concepts activity](https://forum.effectivealtruism.org/posts/r8Qv7QHjJyafmiLnp/#Explaining_Concepts__9_30_10_40_). Used as an icebreaker and helping to establish a shared context in a group that wants to have a deep discussion. Intended for creating groups with a ratio of 1 explainer : 2 students in three rounds for 9-27 people and 8-15 concepts. 
+Group creation automation for [Explaining concepts activity](https://forum.effectivealtruism.org/posts/r8Qv7QHjJyafmiLnp/#Explaining_Concepts__9_30_10_40_). Used as an icebreaker and helping to establish a shared context in a group that wants to have a deep discussion. Intended for creating groups with a ratio of 1 explainer : 2 students in three rounds for 9/15/21/27 people and 8-15 concepts. 
 
-## Usage
-- full intended workflow bellow
-- basically in the directory of the project: `swipl explain.pl` -> `explain("example9.csv","output.csv",Rows).`
+## Workflow:
+1. Create a google form in this template: https://docs.google.com/forms/d/e/1FAIpQLSft_PXbcs4GAv8Hp12ibl69OBMkb2hgdeBdxDKwaEFncDUdyw/viewform?usp=sf_link
+2. If you use other names for options create your own `translate.json` that has keys as your options for each value: CE = Can explain, HE = Wants to have explained, MHE = Maybe wants to have explained, N = Does not want to explain nor have explained 
+3. link it to google sheets
+4. download the Gsheet as csv
+5. use the `sanitize.py` script to sanitize the input `python3 sanitize.py translate.json /path/to/exported.csv /path/to/sanitized.csv`
+6. partition to subgroups of 9/15/21/27 people and put them into their own .csv files, you can add fake people who want to have explained everything if the subgroups don't add up.
+7. run `swipl explain.pl` and then inside `swipl` run `explain("input.csv","output.csv",Rows).`
+8. Rounds are outputted to the output.csv file! If you don't like the current output, you can explore more options with `;`.
 
 ## Documentation
 
-The main predicate is `explainN(+InPath,+OutPath,-Output)` where *N* is 9\/15\/27 which loads csv from *InPath*, dynamically establishes relations based on its content, generates solutions using `rounds9`, and writes the current solution to *OutPath*.
+The main predicates are `explain(+InPath,+OutPath,-Output)`  which loads csv from *InPath*, dynamically establishes relations based on its content, generates solutions using `roundsN`,where *N* is 9\/15\/21\/27, and writes the current solution to *OutPath*.
 
-The `rounds9(?Rounds)` predicate generates a list of 3 rounds for 9 people using  *clpfd* library integer constraints. It uses first-fail heuristic in the `labeling([ff],Vs]` predicate and global constraints: `global_cardinality(Vs,Pairs]` and `all_distinct(Vs)`.
+The `rounds9(+CE,+WE,?Rounds)` predicate generates a list of 3 rounds for 9 people using the *clpfd* library integer constraints. It uses first-fail heuristic in the `labeling([ff],Vs]` predicate and global constraints: `all_distinct(Vs)` and `tuples_in`. The other roundsN work analogically.
 
 Other code is mainly used for converting input into integers and then back to strings for the output.
+
+If there the number of people is unsupported the program halts with a message.
 
 ## Development journal
 - March
@@ -47,13 +55,8 @@ My professor recreated the main functionality in a small fraction of time that I
 The performance boost is actually quite impressive, and I was able to make it general enough that it's not that painful replicating making a 15/27 person version of the `rounds` predicate, still it's not DRY in the least.
 Now it works even for 15 people, this is cool! 27 seems like too much, it sometimes works and sometimes not. But for the real data I was able to generate reasonable groups, so this is a successs.
 
+- 2022-06-09
+Added scoring how many people had explained the thing they really wanted to have explained.
 
-## Workflow:
-1. Create a google form in this template: https://docs.google.com/forms/d/e/1FAIpQLSft_PXbcs4GAv8Hp12ibl69OBMkb2hgdeBdxDKwaEFncDUdyw/viewform?usp=sf_link
-2. If you use other names for options create your own `translate.json` that has keys as your options for each value: CE = Can explain, HE = Wants to have explained, MHE = Maybe wants to have explained, N = Does not want to explain nor have explained 
-3. link it to google sheets
-4. download the Gsheet as csv
-5. use the `sanitize.py` script to sanitize the input `python3 sanitize.py translate.json /path/to/exported.csv /path/to/sanitized.csv`
-6. partition to 9/15/27 people in each file
-6. run `swipl explain.pl` and then inside `swipl` run `explain("input.csv","output.csv",Rows).`
-7. Rounds are outputted to the csv file!
+- 2022-06-10
+Generalized roundsN so that we don't have to select which one to use.

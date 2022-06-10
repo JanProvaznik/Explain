@@ -89,7 +89,6 @@ filter_does_not_want(Relations,FilteredRelations):-
 unique_teachers([],0).
 unique_teachers([X|Rest],Unique):-
     member(X,Rest) -> unique_teachers(Rest,Unique); unique_teachers(Rest,Unique1),Unique #= Unique1+1.
- 
 
 combine(A,B,C):-
     C#=A*100+B.
@@ -119,8 +118,11 @@ rounds9(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
     maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
     append(WETuples1,WETuples2,WETuples),
+    % only those who can explain do
     tuples_in(CETuples, CanExplain),
+    % only those who want explained are explained to
     tuples_in(WETuples, WantsExplain),
+
     all_distinct(FristRoundPeople),
     all_distinct(SecondRoundPeople),
     all_distinct(ThirdRoundPeople),
@@ -150,16 +152,71 @@ rounds9(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     all_distinct([T0,T1,T2,T3,T4,T5]);
     true
     ),
-    labeling([ff],Everything)
-
-    % unique_teachers(AllTeachers,Unique),
-    % print('Unique teachers: '),print(Unique)
-
-.
+    labeling([ff],Everything).
 
 
+group_to_SCPairs(group(_,[S1,S2],C),[[C,S1],[C,S2]]).
+member_of(X,Y):-member(Y,X).
+addIf(Predicate,X,Acc0,Acc1):-
+    call(Predicate,X) -> Acc1 #= Acc0 + 1; Acc1#=Acc0.
+% the score is how many explanations are to people who only maybe wanted the concept explained
+score(HaveExplain,[Round1,Round2,Round3],Score):-
+    maplist(group_to_SCPairs,Round1,Round1Pairs),
+    maplist(group_to_SCPairs,Round2,Round2Pairs),
+    maplist(group_to_SCPairs,Round3,Round3Pairs),
+    append([Round1Pairs,Round2Pairs,Round3Pairs],AllPairs),
+    append(AllPairs,AllPairsFlat),
+    foldl(addIf(member_of(HaveExplain)),AllPairsFlat,0,Score).
 
+    
 
+getCE(CanExplain):-
+    findall([C,T],(can_explain(T,C)),CanExplain).
+getWE(WantsExplain):-
+    findall([C,S],(wants_have_explained(S,C)),WantsExplain).
+getHE(HaveExplain):-
+    findall([C,S],(really_wants_have_explained(S,C)),HaveExplain).
+
+% converting rows to dicts where keys are integers and values concepts/people    
+header_to_conceptdict(Header,ConceptDict):- 
+    row_to_list(Header,[_|ConceptsList]),
+    list_to_dict(ConceptsList,ConceptDict).
+
+rows_to_peopledict(Rows,PeopleDict):- 
+    rows_to_lists(Rows,RowsLL),
+    transpose(RowsLL,[FR|_]),
+    list_to_dict(FR,PeopleDict).
+
+rounds(9,CanExplain,WantsExplain,Rounds):- rounds9(CanExplain,WantsExplain,Rounds).
+rounds(15,CanExplain,WantsExplain,Rounds):- rounds15(CanExplain,WantsExplain,Rounds).
+rounds(21,CanExplain,WantsExplain,Rounds):- rounds21(CanExplain,WantsExplain,Rounds).
+rounds(27,CanExplain,WantsExplain,Rounds):- rounds27(CanExplain,WantsExplain,Rounds).
+rounds(N,_,_,[]):-N #\=9,N#\=15,N#\=21,N#\=27,
+    print("Invalid number of people: only 9,15,21,27 are supported. If you cannot divide your group to subgroups with those counts, add fake people who want everything explained or assign groups leftovers manually."),
+    halt(1).
+
+explain(InPath,OutPath,Out) :-
+    % input -> internal representation 
+    csv_read_file(InPath,[Header|InRows]),
+    header_to_conceptdict(Header,ConceptDict),
+    rows_to_peopledict(InRows,PeopleDict),
+    length(PeopleDict,PeopleCount),
+    rows_to_rels(PeopleDict,ConceptDict,Header,InRows,RelationsUnfiltered), 
+    filter_does_not_want(RelationsUnfiltered,Relations),
+    maplist(assertz,Relations),
+    getCE(CanExplain),
+    getWE(WantsExplain),
+    rounds(PeopleCount,CanExplain,WantsExplain,Rounds),
+    % measuring how good is the solution in terms of how many people who really wanted something explained actually have it explained  
+    getHE(HaveExplain),
+    score(HaveExplain,Rounds,ReallyWantedExplainedScore),
+    % generated solution -> output csv
+    rounds_to_rows(PeopleDict,ConceptDict,Rounds,OutputRows),
+    Out="how many explanations were not only maybe wanted (higher is better):"-ReallyWantedExplainedScore-"                  "-OutputRows,
+    outheader(OutHeader),
+    csv_write_file(OutPath, [OutHeader|OutputRows],[]).
+
+%% Bellow are other variants for the rounds method 
 rounds15(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     Round1 = [  group(T0,[S00,S01],C0),
                 group(T1,[S10,S11],C1),
@@ -214,70 +271,73 @@ rounds15(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     maplist(combine,AllConcepts,AllTeachers,Ks),
     all_distinct(Ks),
 
-    % (all_distinct(AllTeachers);
-    % all_distinct([T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]);
-    % all_distinct([T0,T1,T2,T3,T4,T5,T6,T7,T8,T9]);
-    % true
-    % ),
-
     labeling([ff],Everything).
 
-group_to_SCPairs(group(_,[S1,S2],C),[[C,S1],[C,S2]]).
-member_of(X,Y):-member(Y,X).
-addIf(Predicate,X,Acc0,Acc1):-
-    call(Predicate,X) -> Acc1 #= Acc0 + 1; Acc1#=Acc0.
-% the score is how many explanations are to people who only maybe wanted the concept explained
-score(HaveExplain,[Round1,Round2,Round3],Score):-
-    maplist(group_to_SCPairs,Round1,Round1Pairs),
-    maplist(group_to_SCPairs,Round2,Round2Pairs),
-    maplist(group_to_SCPairs,Round3,Round3Pairs),
-    append([Round1Pairs,Round2Pairs,Round3Pairs],AllPairs),
-    append(AllPairs,AllPairsFlat),
-    foldl(addIf(member_of(HaveExplain)),AllPairsFlat,0,Score).
-
+rounds21(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
+    Round1 = [  group(T0,[S00,S01],C0),
+                group(T1,[S10,S11],C1),
+                group(T2,[S20,S21],C2),
+                group(T3,[S30,S31],C3),
+                group(T4,[S40,S41],C4),
+                group(T5,[S50,S51],C5),
+                group(T6,[S60,S61],C6)
+                ],
+    Round2 = [  group(T7,[S70,S71],C7),
+                group(T8,[S80,S81],C8),
+                group(T9,[S90,S91],C9),
+                group(T10,[S100,S101],C10),
+                group(T11,[S110,S111],C11),
+                group(T12,[S120,S121],C12),
+                group(T13,[S130,S131],C13)
+                ],
+    Round3 = [  group(T14,[S140,S141],C14),
+                group(T15,[S150,S151],C15),
+                group(T16,[S160,S161],C16),
+                group(T17,[S170,S171],C17),
+                group(T18,[S180,S181],C18),
+                group(T19,[S190,S191],C19),
+                group(T20,[S200,S201],C20)
+                ],
     
-
-getCE(CanExplain):-
-    findall([C,T],(can_explain(T,C)),CanExplain).
-getWE(WantsExplain):-
-    findall([C,S],(wants_have_explained(S,C)),WantsExplain).
-getHE(HaveExplain):-
-    findall([C,S],(really_wants_have_explained(S,C)),HaveExplain).
-
-% converting rows to dicts where keys are integers and values concepts/people    
-header_to_conceptdict(Header,ConceptDict):- 
-    row_to_list(Header,[_|ConceptsList]),
-    list_to_dict(ConceptsList,ConceptDict).
-
-rows_to_peopledict(Rows,PeopleDict):- 
-    rows_to_lists(Rows,RowsLL),
-    transpose(RowsLL,[FR|_]),
-    list_to_dict(FR,PeopleDict).
-
-explain(InPath,OutPath,Out) :-
-    % input -> internal representation 
-    csv_read_file(InPath,[Header|InRows]),
-    header_to_conceptdict(Header,ConceptDict),
-    rows_to_peopledict(InRows,PeopleDict),
-    rows_to_rels(PeopleDict,ConceptDict,Header,InRows,RelationsUnfiltered), 
-    filter_does_not_want(RelationsUnfiltered,Relations),
-    maplist(assertz,Relations),
-    getCE(CanExplain),
-    getWE(WantsExplain),
-
-    rounds9(CanExplain,WantsExplain,Rounds),
-    % measuring how good is the solution in terms of how many people who really wanted something explained actually have it explained  
-    getHE(HaveExplain),
-    score(HaveExplain,Rounds,Score),
-    % generated solution -> output csv
-    rounds_to_rows(PeopleDict,ConceptDict,Rounds,OutputRows),
-    Out="ReallyWantedExplainedScore (higher is better)"-Score-OutputRows,
-    outheader(OutHeader),
-    csv_write_file(OutPath, [OutHeader|OutputRows],[]).
+    AllConcepts = [C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19,C20],
+    AllTeachers = [T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20],
+    AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80,S90,S100,S110,S120,S130,S140,S150,S160,S170,S180,S190,S200],
+    AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81,S91,S101,S111,S121,S131,S141,S151,S161,S171,S181,S191,S201],
+    FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21,T3,S30,S31,T4,S40,S41,T5,S50,S51,T6,S60,S61],
+    SecondRoundPeople = [T7,S70,S71,T8,S80,S81,T9,S90,S91,T10,S100,S101,T11,S110,S111,T12,S120,S121,T13,S130,S131],
+    ThirdRoundPeople = [T14,S140,S141,T15,S150,S151,T16,S160,S161,T17,S170,S171,T18,S180,S181,T19,S190,S191,T20,S200,S201],
 
 
+    maplist(list_pair,AllConcepts,AllTeachers,CETuples),
+    maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
+    maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
+    append(WETuples1,WETuples2,WETuples),
+    tuples_in(CETuples, CanExplain),
+    tuples_in(WETuples, WantsExplain),
 
-%%% rounds27 works *sometimes*
+    all_distinct(FristRoundPeople),
+    all_distinct(SecondRoundPeople),
+    all_distinct(ThirdRoundPeople),
+
+    maplist(#<,[T0,T1,T2,T3,T4,T5],[T1,T2,T3,T4,T5,T6]),
+    maplist(#<,[T7,T8,T9,T10,T11,T12],[T8,T9,T10,T11,T12,T13]),
+    maplist(#<,[T14,T15,T16,T17,T18,T19],[T15,T16,T17,T18,T19,T20]),
+
+    maplist(#<,AllFirstStudents,AllSecondStudents),
+
+    maplist(combine,AllConcepts,AllFirstStudents,Ls1),
+    maplist(combine,AllConcepts,AllSecondStudents,Ls2),
+    append(Ls1,Ls2,Ls),
+    all_distinct(Ls),
+
+    maplist(combine,AllConcepts,AllTeachers,Ks),
+    all_distinct(Ks),
+
+    append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
+    labeling([ff],Everything).
+
+
+% rounds27 works only sometimes
 
 rounds27(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     Round1 = [  group(T0,[S00,S01],C0),
@@ -344,7 +404,6 @@ rounds27(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
 
     maplist(combine,AllConcepts,AllTeachers,Ks),
     all_distinct(Ks),
-    % performance is bad if I assert that teachers have to be distinct (and in real data that is almost never satisfiable)
 
     append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
     labeling([ff],Everything).
