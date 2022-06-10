@@ -189,7 +189,7 @@ rows_to_peopledict(Rows,PeopleDict):-
 
 rounds(9,CanExplain,WantsExplain,Rounds):- rounds9(CanExplain,WantsExplain,Rounds).
 rounds(15,CanExplain,WantsExplain,Rounds):- rounds15(CanExplain,WantsExplain,Rounds).
-rounds(21,CanExplain,WantsExplain,Rounds):- rounds21(CanExplain,WantsExplain,Rounds).
+% rounds(21,CanExplain,WantsExplain,Rounds):- rounds21(CanExplain,WantsExplain,Rounds).
 rounds(27,CanExplain,WantsExplain,Rounds):- rounds27(CanExplain,WantsExplain,Rounds).
 rounds(N,_,_,[]):-N #\=9,N#\=15,N#\=21,N#\=27,
     print("Invalid number of people: only 9,15,21,27 are supported. If you cannot divide your group to subgroups with those counts, add fake people who want everything explained or assign groups leftovers manually."),
@@ -206,7 +206,7 @@ explain(InPath,OutPath,Out) :-
     maplist(assertz,Relations),
     getCE(CanExplain),
     getWE(WantsExplain),
-    rounds(PeopleCount,CanExplain,WantsExplain,Rounds),
+    roundsN(3,9,CanExplain,WantsExplain,Rounds),
     % measuring how good is the solution in terms of how many people who really wanted something explained actually have it explained  
     getHE(HaveExplain),
     score(HaveExplain,Rounds,ReallyWantedExplainedScore),
@@ -216,170 +216,36 @@ explain(InPath,OutPath,Out) :-
     outheader(OutHeader),
     csv_write_file(OutPath, [OutHeader|OutputRows],[]).
 
-%% Bellow are other variants for the rounds method 
-rounds15(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
-    Round1 = [  group(T0,[S00,S01],C0),
-                group(T1,[S10,S11],C1),
-                group(T2,[S20,S21],C2),
-                group(T3,[S30,S31],C3),
-                group(T4,[S40,S41],C4)
-                ],
-    Round2 = [  group(T5,[S50,S51],C5),
-                group(T6,[S60,S61],C6),
-                group(T7,[S70,S71],C7),
-                group(T8,[S80,S81],C8),
-                group(T9,[S90,S91],C9)
-                ],
-    Round3 = [  group(T10,[S100,S101],C10),
-                group(T11,[S110,S111],C11),
-                group(T12,[S120,S121],C12),
-                group(T13,[S130,S131],C13),
-                group(T14,[S140,S141],C14)
-                ],
-    AllConcepts = [C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14],
-    AllTeachers = [T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14],
-    AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80,S90,S100,S110,S120,S130,S140],
-    AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81,S91,S101,S111,S121,S131,S141],
-    FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21,T3,S30,S31,T4,S40,S41],
-    SecondRoundPeople = [T5,S50,S51,T6,S60,S61,T7,S70,S71,T8,S80,S81,T9,S90,S91],   
-    ThirdRoundPeople = [T10,S100,S101,T11,S110,S111,T12,S120,S121,T13,S130,S131,T14,S140,S141],
 
-    append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
-
-    maplist(list_pair,AllConcepts,AllTeachers,CETuples),
-    maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
-    maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
-    append(WETuples1,WETuples2,WETuples),
-    tuples_in(CETuples, CanExplain),
-    tuples_in(WETuples, WantsExplain),
-
-    all_distinct(FristRoundPeople),
-    all_distinct(SecondRoundPeople),
-    all_distinct(ThirdRoundPeople),
-
-    maplist(#<,[T0,T1,T2,T3],[T1,T2,T3,T4]),
-    maplist(#<,[T5,T6,T7,T8],[T6,T7,T8,T9]),
-    maplist(#<,[T10,T11,T12,T13],[T11,T12,T13,T14]),
-
-    maplist(#<,AllFirstStudents,AllSecondStudents),
-
-    maplist(combine,AllConcepts,AllFirstStudents,Ls1),
-    maplist(combine,AllConcepts,AllSecondStudents,Ls2),
-    append(Ls1,Ls2,Ls),
-    all_distinct(Ls),
-
-    maplist(combine,AllConcepts,AllTeachers,Ks),
-    all_distinct(Ks),
-
-    labeling([ff],Everything).
-
-rounds21(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
-    Round1 = [  group(T0,[S00,S01],C0),
-                group(T1,[S10,S11],C1),
-                group(T2,[S20,S21],C2),
-                group(T3,[S30,S31],C3),
-                group(T4,[S40,S41],C4),
-                group(T5,[S50,S51],C5),
-                group(T6,[S60,S61],C6)
-                ],
-    Round2 = [  group(T7,[S70,S71],C7),
-                group(T8,[S80,S81],C8),
-                group(T9,[S90,S91],C9),
-                group(T10,[S100,S101],C10),
-                group(T11,[S110,S111],C11),
-                group(T12,[S120,S121],C12),
-                group(T13,[S130,S131],C13)
-                ],
-    Round3 = [  group(T14,[S140,S141],C14),
-                group(T15,[S150,S151],C15),
-                group(T16,[S160,S161],C16),
-                group(T17,[S170,S171],C17),
-                group(T18,[S180,S181],C18),
-                group(T19,[S190,S191],C19),
-                group(T20,[S200,S201],C20)
-                ],
+% roundGen(Count,Round,People,Concepts,Teachers,FirstStudents,SecondStudents)
+roundGen(1,[group(T,[S0,S1],C)],[T,S0,S1],[C],[T],[S0],[S1]).
+roundGen(NumberGroups, [group(T,[S0,S1],C)|Rest],[T,S0,S1|PRest],[C|CRest],[T|TRest],[S0|S0Rest],[S1|S1Rest]):-
+    length([_|Rest],NumberGroups),
+    N #= NumberGroups - 1,
+    roundGen(N,Rest,PRest,CRest,TRest,S0Rest,S1Rest).
+teachers_ordered(Teachers):-
+    Teachers = [_|Second],
+    reverse(Teachers, [_|RFirst]),
+    reverse(RFirst, First),
+    maplist(#<,First,Second).
     
-    AllConcepts = [C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19,C20],
-    AllTeachers = [T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20],
-    AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80,S90,S100,S110,S120,S130,S140,S150,S160,S170,S180,S190,S200],
-    AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81,S91,S101,S111,S121,S131,S141,S151,S161,S171,S181,S191,S201],
-    FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21,T3,S30,S31,T4,S40,S41,T5,S50,S51,T6,S60,S61],
-    SecondRoundPeople = [T7,S70,S71,T8,S80,S81,T9,S90,S91,T10,S100,S101,T11,S110,S111,T12,S120,S121,T13,S130,S131],
-    ThirdRoundPeople = [T14,S140,S141,T15,S150,S151,T16,S160,S161,T17,S170,S171,T18,S180,S181,T19,S190,S191,T20,S200,S201],
+% roundsGen(RoundsCount,GroupCount,Rounds,RoundsPeople,RoundsConcepts,RoundsTeachers,RoundsFirstStudents,RoundsSecondStudents):-
+roundsGen(1,GroupCount,[Round1],[FirstRoundPeople],[R1Concepts],[R1Teachers],[R1FirstStudents],[R1SecondStudents]):-
+    roundGen(GroupCount,Round1,FirstRoundPeople,R1Concepts,R1Teachers,R1FirstStudents,R1SecondStudents).
 
+roundsGen(N,GroupCount,[Round1|Rest],[FirstRoundPeople|RestPeople],[R1Concepts|RestConcepts],[R1Teachers|RestTeachers],[R1FirstStudents|RestFirstStudents],[R1SecondStudents|RestSecondStudents]):-
+    roundGen(GroupCount,Round1,FirstRoundPeople,R1Concepts,R1Teachers,R1FirstStudents,R1SecondStudents),
+    N0#= N-1,
+    roundsGen(N0,GroupCount,Rest,RestPeople,RestConcepts,RestTeachers,RestFirstStudents,RestSecondStudents).
 
-    maplist(list_pair,AllConcepts,AllTeachers,CETuples),
-    maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
-    maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
-    append(WETuples1,WETuples2,WETuples),
-    tuples_in(CETuples, CanExplain),
-    tuples_in(WETuples, WantsExplain),
+roundsN(RoundsCount,GroupCount,CanExplain,WantsExplain,Rounds):-
+    roundsGen(RoundsCount,GroupCount,Rounds,RoundsPeople,RoundsConcepts,RoundsTeachers,RoundsFirstStudents,RoundsSecondStudents),
 
-    all_distinct(FristRoundPeople),
-    all_distinct(SecondRoundPeople),
-    all_distinct(ThirdRoundPeople),
-
-    maplist(#<,[T0,T1,T2,T3,T4,T5],[T1,T2,T3,T4,T5,T6]),
-    maplist(#<,[T7,T8,T9,T10,T11,T12],[T8,T9,T10,T11,T12,T13]),
-    maplist(#<,[T14,T15,T16,T17,T18,T19],[T15,T16,T17,T18,T19,T20]),
-
-    maplist(#<,AllFirstStudents,AllSecondStudents),
-
-    maplist(combine,AllConcepts,AllFirstStudents,Ls1),
-    maplist(combine,AllConcepts,AllSecondStudents,Ls2),
-    append(Ls1,Ls2,Ls),
-    all_distinct(Ls),
-
-    maplist(combine,AllConcepts,AllTeachers,Ks),
-    all_distinct(Ks),
-
-    append([AllConcepts,AllTeachers,AllFirstStudents,AllSecondStudents],Everything),
-    labeling([ff],Everything).
-
-
-% rounds27 works only sometimes
-
-rounds27(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
-    Round1 = [  group(T0,[S00,S01],C0),
-                group(T1,[S10,S11],C1),
-                group(T2,[S20,S21],C2),
-                group(T3,[S30,S31],C3),
-                group(T4,[S40,S41],C4),
-                group(T5,[S50,S51],C5),
-                group(T6,[S60,S61],C6),
-                group(T7,[S70,S71],C7),
-                group(T8,[S80,S81],C8)
-                ],
-    Round2 = [  group(T9,[S90,S91],C9),
-                group(T10,[S100,S101],C10),
-                group(T11,[S110,S111],C11),
-                group(T12,[S120,S121],C12),
-                group(T13,[S130,S131],C13),
-                group(T14,[S140,S141],C14),
-                group(T15,[S150,S151],C15),
-                group(T16,[S160,S161],C16),
-                group(T17,[S170,S171],C17)
-                ],
-    Round3 = [  group(T18,[S180,S181],C18),
-                group(T19,[S190,S191],C19),
-                group(T20,[S200,S201],C20),
-                group(T21,[S210,S211],C21),
-                group(T22,[S220,S221],C22),
-                group(T23,[S230,S231],C23),
-                group(T24,[S240,S241],C24),
-                group(T25,[S250,S251],C25),
-                group(T26,[S260,S261],C26)
-                ],
+    append(RoundsConcepts,AllConcepts),
+    append(RoundsTeachers,AllTeachers),
+    append(RoundsFirstStudents,AllFirstStudents),
+    append(RoundsSecondStudents,AllSecondStudents),
     
-    AllConcepts = [C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19,C20,C21,C22,C23,C24,C25,C26],
-    AllTeachers = [T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22,T23,T24,T25,T26],
-    AllFirstStudents = [S00,S10,S20,S30,S40,S50,S60,S70,S80,S90,S100,S110,S120,S130,S140,S150,S160,S170,S180,S190,S200,S210,S220,S230,S240,S250,S260],
-    AllSecondStudents = [S01,S11,S21,S31,S41,S51,S61,S71,S81,S91,S101,S111,S121,S131,S141,S151,S161,S171,S181,S191,S201,S211,S221,S231,S241,S251,S261],
-    FristRoundPeople = [T0,S00,S01,T1,S10,S11,T2,S20,S21,T3,S30,S31,T4,S40,S41,T5,S50,S51,T6,S60,S61,T7,S70,S71,T8,S80,S81],
-    SecondRoundPeople = [T9,S90,S91,T10,S100,S101,T11,S110,S111,T12,S120,S121,T13,S130,S131,T14,S140,S141,T15,S150,S151,T16,S160,S161,T17,S170,S171],
-    ThirdRoundPeople = [T18,S180,S181,T19,S190,S191,T20,S200,S201,T21,S210,S211,T22,S220,S221,T23,S230,S231,T24,S240,S241,T25,S250,S251,T26,S260,S261],
-
-
     maplist(list_pair,AllConcepts,AllTeachers,CETuples),
     maplist(list_pair,AllConcepts,AllFirstStudents,WETuples1),
     maplist(list_pair,AllConcepts,AllSecondStudents,WETuples2),
@@ -387,13 +253,9 @@ rounds27(CanExplain,WantsExplain,[Round1,Round2,Round3]):-
     tuples_in(CETuples, CanExplain),
     tuples_in(WETuples, WantsExplain),
 
-    all_distinct(FristRoundPeople),
-    all_distinct(SecondRoundPeople),
-    all_distinct(ThirdRoundPeople),
+    maplist(all_distinct,RoundsPeople),
 
-    maplist(#<,[T0,T1,T2,T3,T4,T5,T6,T7],[T1,T2,T3,T4,T5,T6,T7,T8]),
-    maplist(#<,[T9,T10,T11,T12,T13,T14,T15,T16],[T10,T11,T12,T13,T14,T15,T16,T17]),
-    maplist(#<,[T18,T19,T20,T21,T22,T23,T24,T25],[T19,T20,T21,T22,T23,T24,T25,T26]),
+    maplist(teachers_ordered,RoundsTeachers),
 
     maplist(#<,AllFirstStudents,AllSecondStudents),
 
