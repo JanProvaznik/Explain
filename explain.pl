@@ -29,9 +29,12 @@ numeric('CE',-6).
 can_explain(Teacher,Concept):-relation(Teacher,Concept,-6).
 really_wants_have_explained(Student,Concept):-relation(Student,Concept,3).
 maybe_wants_have_explained(Student,Concept):-relation(Student,Concept,1).
-wants_have_explained(Student,Concept):- really_wants_have_explained(Student,Concept) ; maybe_wants_have_explained(Student,Concept).
+wants_have_explained(Student,Concept):-
+     really_wants_have_explained(Student,Concept) ;
+     maybe_wants_have_explained(Student,Concept).
 
-relation_to_numeric(PeopleDict,ConceptDict,relation(Person,Concept,Action),relation(PersonN,ConceptN,ActionN)):-
+relation_to_numeric(PeopleDict,ConceptDict,
+    relation(Person,Concept,Action),relation(PersonN,ConceptN,ActionN)):-
     member(PersonN:Person,PeopleDict),
     member(ConceptN:Concept,ConceptDict),
     numeric(Action,ActionN).
@@ -67,8 +70,11 @@ rows_to_rels(PeopleDict,ConceptDict,Header,Rows,Rels):-
     maplist(relation_to_numeric(PeopleDict,ConceptDict),RelsS,Rels).
 
 % converts an integer group to a list of Strings
-group_to_string_list(PeopleDict,ConceptDict,group(Teacher,Students,Concept),[ConceptS,TeacherS|StudentsS]):-
-    member(Teacher:TeacherS, PeopleDict),member(Concept:ConceptS,ConceptDict),list_of_numbers_to_people(PeopleDict,Students,StudentsS).
+group_to_string_list(PeopleDict,ConceptDict,
+    group(Teacher,Students,Concept),[ConceptS,TeacherS|StudentsS]):-
+    member(Teacher:TeacherS, PeopleDict),
+    member(Concept:ConceptS,ConceptDict),
+    list_of_numbers_to_people(PeopleDict,Students,StudentsS).
 
 % like append/2 but puts row('') in between
 join([], []).
@@ -112,13 +118,18 @@ round_gen(NumberGroups, [group(T,[S0,S1],C)|Rest],[T,S0,S1|PRest],[C|CRest],[T|T
     round_gen(N,Rest,PRest,CRest,TRest,S0Rest,S1Rest).
     
 % rounds_gen(RoundsCount,GroupCount,Rounds,RoundsPeople,RoundsConcepts,RoundsTeachers,RoundsFirstStudents,RoundsSecondStudents):-
-rounds_gen(1,GroupCount,[Round1],[FirstRoundPeople],[R1Concepts],[R1Teachers],[R1FirstStudents],[R1SecondStudents]):-
-    round_gen(GroupCount,Round1,FirstRoundPeople,R1Concepts,R1Teachers,R1FirstStudents,R1SecondStudents).
+rounds_gen(1,GroupCount,[Round1],[FirstRoundPeople],[R1Concepts],
+    [R1Teachers],[R1FirstStudents],[R1SecondStudents]):-
+    round_gen(GroupCount,Round1,FirstRoundPeople,R1Concepts,
+        R1Teachers,R1FirstStudents,R1SecondStudents).
 
-rounds_gen(N,GroupCount,[Round1|Rest],[FirstRoundPeople|RestPeople],[R1Concepts|RestConcepts],[R1Teachers|RestTeachers],[R1FirstStudents|RestFirstStudents],[R1SecondStudents|RestSecondStudents]):-
-    round_gen(GroupCount,Round1,FirstRoundPeople,R1Concepts,R1Teachers,R1FirstStudents,R1SecondStudents),
+rounds_gen(N,GroupCount,[Round1|Rest],[FirstRoundPeople|RestPeople],[R1Concepts|RestConcepts],
+    [R1Teachers|RestTeachers],[R1FirstStudents|RestFirstStudents],[R1SecondStudents|RestSecondStudents]):-
+    round_gen(GroupCount,Round1,FirstRoundPeople,R1Concepts,
+        R1Teachers,R1FirstStudents,R1SecondStudents),
     N0#= N-1,
-    rounds_gen(N0,GroupCount,Rest,RestPeople,RestConcepts,RestTeachers,RestFirstStudents,RestSecondStudents).
+    rounds_gen(N0,GroupCount,Rest,RestPeople,RestConcepts,
+        RestTeachers,RestFirstStudents,RestSecondStudents).
 
 teachers_ordered(Teachers):-
     Teachers = [_|Second],
@@ -193,6 +204,7 @@ explain(InPath,OutPath,NumberOfRounds,Out) :-
     score(HaveExplain,Rounds,ReallyWantedExplainedScore),
     % generated solution -> output csv
     rounds_to_rows(PeopleDict,ConceptDict,Rounds,OutputRows),
-    Out="how many explanations were not only maybe wanted (higher is better):"-ReallyWantedExplainedScore-"                  "-OutputRows,
+    Out="how many explanations were not only maybe wanted (higher is better):"
+        -ReallyWantedExplainedScore-"                  "-OutputRows,
     outheader(OutHeader),
     csv_write_file(OutPath, [OutHeader|OutputRows],[]).
