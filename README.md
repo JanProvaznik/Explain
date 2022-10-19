@@ -1,5 +1,9 @@
 # Explain
-Group creation automation for [Explaining concepts activity](https://forum.effectivealtruism.org/posts/r8Qv7QHjJyafmiLnp/#Explaining_Concepts__9_30_10_40_). Used as an icebreaker and helping to establish a shared context in a group that wants to have a deep discussion. Intended for creating groups with a ratio of 1 explainer : 2 students in N rounds (tested for 2-5) for K (multiple of 3, best between 9-27) people and 8-15 concepts. 
+Group creation automation for [Explaining concepts activity](https://forum.effectivealtruism.org/posts/r8Qv7QHjJyafmiLnp/#Explaining_Concepts__9_30_10_40_). Used as an icebreaker and helping to establish a shared context in a group that wants to have a deep discussion. Intended for creating groups with a ratio of 1 explainer : 2 students in N rounds (tested for 2-5) for K (multiple of 3, best between 9-27) people and 8-15 concepts.
+
+## Prerequisites:
+- install Python
+- install [SWI Prolog](https://www.swi-prolog.org/)
 
 ## Workflow:
 1. Create a google form in this template: https://docs.google.com/forms/d/e/1FAIpQLSft_PXbcs4GAv8Hp12ibl69OBMkb2hgdeBdxDKwaEFncDUdyw/viewform?usp=sf_link
